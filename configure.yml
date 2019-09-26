@@ -1,0 +1,198 @@
+---
+- name: Install foreman server
+
+  hosts: foreman_server
+
+  become: yes
+
+  roles:
+
+    - nephelaiio.plugins
+
+  vars:
+
+    foreman_api_allpages: 9999999999
+
+  tasks:
+
+    - name: query foreman users
+      uri:
+        url: "{{ foreman_url }}/api/users"
+        method: GET
+        body_format: json
+        body:
+          per_page: "{{ foreman_api_allpages }}"
+        force_basic_auth: yes
+        user: "{{ foreman_admin_user }}"
+        password: "{{ foreman_admin_pass }}"
+      register: foreman_user_query
+      ignore_errors: yes
+
+    - name: rake permissions:reset
+      command: /usr/sbin/foreman-rake permissions:reset
+      register: handler_permissions_reset
+      when: foreman_user_query is failed
+
+    - name: override admin credentials
+      set_fact:
+        foreman_permissions_reset: true
+        reset_admin_user: "{{ ((handler_permissions_reset.stdout | split_with(' '))[3])[0:-1] }}"
+        reset_admin_pass: "{{ (handler_permissions_reset.stdout | split_with(' '))[5] }}"
+      when: foreman_user_query is failed
+
+    - name: query foreman users
+      uri:
+        url: "{{ foreman_url }}/api/users"
+        method: GET
+        body_format: json
+        body:
+          per_page: "{{ foreman_api_allpages }}"
+        force_basic_auth: yes
+        user: "{{ reset_admin_user }}"
+        password: "{{ reset_admin_pass }}"
+      register: foreman_reset_query
+      when: foreman_user_query is failed
+
+    - name: set admin user facts
+      set_fact:
+        foreman_admin: "{{ foreman_reset_query.json.results | selectattr('login', 'equalto', foreman_admin_user) |  first }}"
+        foreman_reset:
+          password: "{{ foreman_admin_pass }}"
+      when: foreman_user_query is failed
+
+    - name: set admin foreman password
+      uri:
+        url: "{{ foreman_url }}/api/users/{{ foreman_admin.id }}"
+        method: PUT
+        body_format: json
+        body:
+          user:
+            current_password: "{{ reset_admin_pass }}"
+            password: "{{ foreman_admin_pass }}"
+            password_confirmation: "{{ foreman_admin_pass }}"
+        force_basic_auth: yes
+        user: "{{ reset_admin_user }}"
+        password: "{{ reset_admin_pass }}"
+      when: foreman_user_query is failed
+
+    - block:
+
+        - name: query foreman organizations
+          uri:
+            url: "{{ foreman_url }}/api/organizations"
+            method: GET
+            body_format: json
+            body:
+              per_page: "{{ foreman_api_allpages }}"
+            force_basic_auth: yes
+            user: "{{ foreman_admin_user }}"
+            password: "{{ foreman_admin_pass }}"
+          register: foreman_organization_query
+
+        - name: set organization facts
+          set_fact:
+            foreman_organization_names: "{{ foreman_organization_query.json.results | map(attribute='name') | list }}"
+            foreman_organization_results: "{{ foreman_organization_query.json.results }}"
+
+        - name: destroy default organization
+          uri:
+            url: "{{ foreman_url }}/api/organizations/{{ organization_id }}"
+            method: DELETE
+            body_format: json
+            user: "{{ foreman_api_user }}"
+            password: "{{ foreman_api_pass }}"
+            force_basic_auth: yes
+            status_code: 200
+          vars:
+            organization_id: "{{ foreman_organization.id }}"
+          loop_control:
+            loop_var: foreman_organization
+            label: "{{ foreman_organization.name }}"
+          with_items: "{{ foreman_organization_results | selectattr('name', 'equalto', 'Default Organization') | list }}"
+
+        - name: create foreman organizations
+          uri:
+            url: "{{ foreman_url }}/api/organizations"
+            method: POST
+            body_format: json
+            body:
+              organization:
+                name: "{{ item.name }}"
+            user: "{{ foreman_api_user }}"
+            password: "{{ foreman_api_pass }}"
+            force_basic_auth: yes
+            status_code: 201
+          with_items: "{{ foreman_organizations.values() | list }}"
+          when: item.name not in foreman_organization_names
+
+        - name: query foreman organizations
+          uri:
+            url: "{{ foreman_url }}/api/organizations"
+            method: GET
+            body_format: json
+            body:
+              per_page: "{{ foreman_api_allpages }}"
+            force_basic_auth: yes
+            user: "{{ foreman_admin_user }}"
+            password: "{{ foreman_admin_pass }}"
+          register: foreman_organization_query
+
+        - name: query foreman locations
+          uri:
+            url: "{{ foreman_url }}/api/locations"
+            method: GET
+            body_format: json
+            body:
+              per_page: "{{ foreman_api_allpages }}"
+            force_basic_auth: yes
+            user: "{{ foreman_admin_user }}"
+            password: "{{ foreman_admin_pass }}"
+          register: foreman_location_query
+
+        - name: set organization/location facts
+          set_fact:
+            foreman_organization_names: "{{ foreman_organization_query.json.results | map(attribute='name') | list }}"
+            foreman_organization_results: "{{ foreman_organization_query.json.results }}"
+            foreman_location_names: "{{ foreman_location_query.json.results | map(attribute='name') | list }}"
+            foreman_location_results: "{{ foreman_location_query.json.results }}"
+
+        - name: destroy default location
+          uri:
+            url: "{{ foreman_url }}/api/locations/{{ location_id }}"
+            method: DELETE
+            body_format: json
+            user: "{{ foreman_api_user }}"
+            password: "{{ foreman_api_pass }}"
+            force_basic_auth: yes
+            status_code: 200
+          vars:
+            location_id: "{{ foreman_location.id }}"
+          loop_control:
+            loop_var: foreman_location
+            label: "{{ foreman_location.name }}"
+          with_items: "{{ foreman_location_results | selectattr('name', 'equalto', 'Default Location') | list }}"
+
+        - name: create foreman locations
+          uri:
+            url: "{{ foreman_url }}/api/locations"
+            method: POST
+            body_format: json
+            body:
+              location:
+                name: "{{ item.name }}"
+                organization_id: "{{ organization_id }}"
+            user: "{{ foreman_api_user }}"
+            password: "{{ foreman_api_pass }}"
+            force_basic_auth: yes
+            status_code: 201
+          vars:
+            organization_id: "{{ foreman_organization_results | selectattr('name', 'equalto', item.organization) | map(attribute='name') | first }}"
+          with_items: "{{ foreman_locations.values() | list }}"
+          when: item.name not in foreman_location_names
+
+      delegate_to: localhost
+
+    - name: notify of credential changes
+      debug:
+        msg: "{{ handler_permissions_reset.stdout }}"
+      when: foreman_permissions_reset | bool
