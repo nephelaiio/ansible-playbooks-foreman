@@ -13,3 +13,11 @@
     - foreman_server_repositories
     - haveged
     - foreman_installer
+
+  vars:
+
+    foreman_installer_options:
+      - --enable-foreman-plugin-ansible
+      - --enable-foreman-plugin-cockpit
+      - --enable-foreman-plugin-discovery
+

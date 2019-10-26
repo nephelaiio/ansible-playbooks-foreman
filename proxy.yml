@@ -1,0 +1,57 @@
+---
+- name: Install foreman proxy
+
+  hosts: foreman_proxy
+
+  become: yes
+
+  roles:
+
+    - nephelaiio.plugins
+    - nephelaiio.pip
+    - foreman_server_repositories
+    - haveged
+    - foreman_installer
+
+  vars:
+
+    foreman_installer_options:
+      - --no-enable-foreman
+      - --no-enable-puppet
+      - --enable-foreman-proxy
+      - --enable-foreman-proxy-plugin-ansible
+      - --enable-foreman-proxy-plugin-discovery
+    _foreman_domains:
+      - "{{ ansible_domain }}"
+      - "{{ (ansible_default_ipv4.network + '/' + ansible_default_ipv4.netmask) | ipaddr | ipaddr('revdns') | split_with('.') | tail | join('.') }}"
+    _foreman_subnets:
+      - "{{ (ansible_default_ipv4.network + '/' + ansible_default_ipv4.netmask) }}"
+
+  tasks:
+
+    - name: install pip requirements
+      pip:
+        name: apypie
+
+    - name: create foreman domains
+      foreman_domain:
+        name: "{{ item }}"
+        locations:
+          - "{{ foreman_location }}"
+        server_url: "{{ foreman_url }}"
+        username: "{{ foreman_admin_user }}"
+        password: "{{ foreman_admin_pass }}"
+      loop_control:
+        label: "{{ item }}"
+      loop: "{{ foreman_domains | default(_foreman_domains) }}"
+
+    - name: create foreman subnets
+      foreman_subnet:
+        name: "{{ subnet | ipaddr('host') }}/{{ subnet | ipaddr('prefix') }}"
+      vars:
+        subnet: "{{ (ansible_default_ipv4.network + '/' + ansible_default_ipv4.netmask) | ipaddr }}"
+        dns_primary: "{{ ansible_dns.nameservers[0] }}"
+        dns_secondary: "{{ ansible_dns.nameservers[1] | default(omit) }}"
+        domains: "{{ foreman_domain | default(_foreman_domains) }}"
+        subnet: "{{ item | ipaddr }}"
+      loop: "{{ foreman_subnets | default(_foreman_subnets) }}"
