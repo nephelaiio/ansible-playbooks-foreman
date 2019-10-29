@@ -19,7 +19,6 @@
       - --no-enable-foreman
       - --no-enable-puppet
       - --enable-foreman-proxy
-      - --enable-foreman-proxy-plugin-ansible
       - --enable-foreman-proxy-plugin-discovery
     _foreman_domains:
       - "{{ ansible_domain }}"
