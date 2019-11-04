@@ -9,22 +9,28 @@
 
     - nephelaiio.plugins
     - nephelaiio.pip
+    - diodonfrost.puppet_agent
     - foreman_server_repositories
     - haveged
     - foreman_installer
 
   vars:
 
-    foreman_installer_options:
-      - --no-enable-foreman
-      - --no-enable-puppet
-      - --enable-foreman-proxy
-      - --enable-foreman-proxy-plugin-discovery
+    puppet_version: 6
+    puppet_agent_server: "{{ groups['foreman_app'] | first }}"
+
+    foreman_proxy_port: 8443
     _foreman_domains:
       - "{{ ansible_domain }}"
-      - "{{ (ansible_default_ipv4.network + '/' + ansible_default_ipv4.netmask) | ipaddr | ipaddr('revdns') | split_with('.') | tail | join('.') }}"
+      - "{{ (ansible_default_ipv4.network + '/' + ansible_default_ipv4.netmask) | ipaddr | ipaddr('revdns') | split_with('.') | tail | join('.') | regex_replace('\\.$', '') }}"
     _foreman_subnets:
       - "{{ (ansible_default_ipv4.network + '/' + ansible_default_ipv4.netmask) }}"
+
+  pre_tasks:
+
+    - name: create puppet group
+      group:
+        name: puppet
 
   tasks:
 
@@ -35,22 +41,33 @@
     - name: create foreman domains
       foreman_domain:
         name: "{{ item }}"
-        locations:
-          - "{{ foreman_location }}"
+        locations: "{{ foreman_locations }}"
         server_url: "{{ foreman_url }}"
         username: "{{ foreman_admin_user }}"
         password: "{{ foreman_admin_pass }}"
       loop_control:
         label: "{{ item }}"
       loop: "{{ foreman_domains | default(_foreman_domains) }}"
+      tags:
+        - domains
+        - configure
 
     - name: create foreman subnets
       foreman_subnet:
-        name: "{{ subnet | ipaddr('host') }}/{{ subnet | ipaddr('prefix') }}"
-      vars:
-        subnet: "{{ (ansible_default_ipv4.network + '/' + ansible_default_ipv4.netmask) | ipaddr }}"
+        name: "{{ subnet | ipaddr('network') }}/{{ subnet | ipaddr('prefix') }}"
+        network: "{{ subnet | ipaddr('network') }}"
+        cidr: "{{ subnet | ipaddr('prefix') }}"
+        gateway: "{{ subnet | ipaddr('1') }}"
         dns_primary: "{{ ansible_dns.nameservers[0] }}"
         dns_secondary: "{{ ansible_dns.nameservers[1] | default(omit) }}"
         domains: "{{ foreman_domain | default(_foreman_domains) }}"
+        locations: "{{ foreman_locations }}"
+        server_url: "{{ foreman_url }}"
+        username: "{{ foreman_admin_user }}"
+        password: "{{ foreman_admin_pass }}"
+      vars:
         subnet: "{{ item | ipaddr }}"
       loop: "{{ foreman_subnets | default(_foreman_subnets) }}"
+      tags:
+        - subnets
+        - configure
