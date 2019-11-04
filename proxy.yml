@@ -17,7 +17,6 @@
   vars:
 
     puppet_version: 6
-    puppet_agent_server: "{{ groups['foreman_app'] | first }}"
 
     foreman_proxy_port: 8443
     _foreman_domains:
