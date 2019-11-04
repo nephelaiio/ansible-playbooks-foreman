@@ -1,0 +1,16 @@
+---
+- name: Register external hosts to foreman
+
+  hosts: foreman_external_host
+
+  become: yes
+
+  roles:
+
+    - nephelaiio.plugins
+    - diodonfrost.puppet_agent
+
+  vars:
+
+    puppet_version: 6
+    puppet_agent_server: "{{ groups['foreman_app'] | first }}"
