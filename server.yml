@@ -13,3 +13,68 @@
     - foreman_server_repositories
     - haveged
     - foreman_installer
+
+  vars:
+
+    foreman_api_allpages: 9999999999
+
+  tasks:
+
+    - name: query foreman users
+      uri:
+        url: "{{ foreman_url }}/api/users"
+        method: GET
+        body_format: json
+        body:
+          per_page: "{{ foreman_api_allpages }}"
+        force_basic_auth: yes
+        user: "{{ foreman_admin_user }}"
+        password: "{{ foreman_admin_pass }}"
+      register: foreman_user_query
+      ignore_errors: yes
+
+    - block:
+
+        - name: rake permissions:reset
+          command: /usr/sbin/foreman-rake permissions:reset
+          register: handler_permissions_reset
+
+        - name: override admin credentials
+          set_fact:
+            foreman_permissions_reset: true
+            reset_admin_user: "{{ ((handler_permissions_reset.stdout | split_with(' '))[3])[0:-1] }}"
+            reset_admin_pass: "{{ (handler_permissions_reset.stdout | split_with(' '))[5] }}"
+
+        - name: query foreman users
+          uri:
+            url: "{{ foreman_url }}/api/users"
+            method: GET
+            body_format: json
+            body:
+              per_page: "{{ foreman_api_allpages }}"
+            force_basic_auth: yes
+            user: "{{ reset_admin_user }}"
+            password: "{{ reset_admin_pass }}"
+          register: foreman_reset_query
+
+        - name: set admin user facts
+          set_fact:
+            foreman_admin: "{{ foreman_reset_query.json.results | selectattr('login', 'equalto', foreman_admin_user) |  first }}"
+            foreman_reset:
+              password: "{{ foreman_admin_pass }}"
+
+        - name: set admin foreman password
+          uri:
+            url: "{{ foreman_url }}/api/users/{{ foreman_admin.id }}"
+            method: PUT
+            body_format: json
+            body:
+              user:
+                current_password: "{{ reset_admin_pass }}"
+                password: "{{ foreman_admin_pass }}"
+                password_confirmation: "{{ foreman_admin_pass }}"
+            force_basic_auth: yes
+            user: "{{ reset_admin_user }}"
+            password: "{{ reset_admin_pass }}"
+
+      when: foreman_user_query is failed
