@@ -57,6 +57,8 @@
         network: "{{ subnet | ipaddr('network') }}"
         cidr: "{{ subnet | ipaddr('prefix') }}"
         gateway: "{{ subnet | ipaddr('1') }}"
+        from_ip: "{{ subnet | ipaddr('128') }}"
+        to_ip: "{{ subnet | ipaddr('254') }}"
         dns_primary: "{{ ansible_dns.nameservers[0] }}"
         dns_secondary: "{{ ansible_dns.nameservers[1] | default(omit) }}"
         domains: "{{ foreman_domain | default(_foreman_domains) }}"
