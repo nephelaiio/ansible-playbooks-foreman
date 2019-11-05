@@ -44,6 +44,7 @@
         server_url: "{{ foreman_url }}"
         username: "{{ foreman_admin_user }}"
         password: "{{ foreman_admin_pass }}"
+        dns_proxy: "{{ ansible_fqdn }}"
       loop_control:
         label: "{{ item }}"
       loop: "{{ foreman_domains | default(_foreman_domains) }}"
@@ -66,6 +67,11 @@
         server_url: "{{ foreman_url }}"
         username: "{{ foreman_admin_user }}"
         password: "{{ foreman_admin_pass }}"
+        dhcp_proxy: "{{ ansible_fqdn }}"
+        tftp_proxy: "{{ ansible_fqdn }}"
+        httpboot_proxy: "{{ ansible_fqdn }}"
+        discovery_proxy: "{{ ansible_fqdn }}"
+        dns_proxy: "{{ ansible_fqdn }}"
       vars:
         subnet: "{{ item | ipaddr }}"
       loop: "{{ foreman_subnets | default(_foreman_subnets) }}"
