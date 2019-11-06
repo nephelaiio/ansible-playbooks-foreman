@@ -20,6 +20,10 @@
 
   tasks:
 
+    - name: install pip requirements
+      pip:
+        name: apypie
+
     - name: query foreman users
       uri:
         url: "{{ foreman_url }}/api/users"
@@ -78,3 +82,17 @@
             password: "{{ reset_admin_pass }}"
 
       when: foreman_user_query is failed
+
+    - name: configure ldap authentication
+      foreman_auth_source_ldap:
+        name: "{{ foreman_ldap_domain }}"
+        host: "{{ foreman_ldap_host }}"
+        locations: "{{ foreman_locations }}"
+        organizations: "{{ foreman_organizations }}"
+        account: "{{ foreman_ldap_user }}"
+        account_password: "{{ foreman_ldap_pass }}"
+        state: present
+        server_url: "{{ foreman_url }}"
+        username: "{{ foreman_admin_user }}"
+        password: "{{ foreman_admin_pass }}"
+      when: foreman_ldap_domain is defined
