@@ -64,17 +64,25 @@
         dns_secondary: "{{ ansible_dns.nameservers[1] | default(omit) }}"
         domains: "{{ foreman_domain | default(_foreman_domains) }}"
         locations: "{{ foreman_locations }}"
-        server_url: "{{ foreman_url }}"
-        username: "{{ foreman_admin_user }}"
-        password: "{{ foreman_admin_pass }}"
         dhcp_proxy: "{{ ansible_fqdn }}"
         tftp_proxy: "{{ ansible_fqdn }}"
         httpboot_proxy: "{{ ansible_fqdn }}"
         discovery_proxy: "{{ ansible_fqdn }}"
         dns_proxy: "{{ ansible_fqdn }}"
+        server_url: "{{ foreman_url }}"
+        username: "{{ foreman_admin_user }}"
+        password: "{{ foreman_admin_pass }}"
       vars:
         subnet: "{{ item | ipaddr }}"
       loop: "{{ foreman_subnets | default(_foreman_subnets) }}"
       tags:
         - subnets
         - configure
+
+    - name: activate host discovery
+      foreman_setting:
+        name: default_pxe_item_global
+        value: discovery
+        server_url: "{{ foreman_url }}"
+        username: "{{ foreman_admin_user }}"
+        password: "{{ foreman_admin_pass }}"
