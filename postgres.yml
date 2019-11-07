@@ -59,4 +59,3 @@
         db: "{{ metabase_db_name | default('metabase') }}"
         priv: ALL
       become_user: postgres
-      
