@@ -89,10 +89,77 @@
         host: "{{ foreman_ldap_host }}"
         locations: "{{ foreman_locations }}"
         organizations: "{{ foreman_organizations }}"
-        account: "{{ foreman_ldap_user }}"
+        account: "{{ foreman_ldap_cn }}"
         account_password: "{{ foreman_ldap_pass }}"
+        attr_login: uid
+        attr_firstname: givenName
+        attr_lastname: sn
+        attr_mail: mail
+        base_dn: "{{ foreman_ldap_user_base }}"
+        groups_base: "{{ foreman_ldap_group_base }}"
+        onthefly_register: yes
+        usergroup_sync: yes
         state: present
         server_url: "{{ foreman_url }}"
         username: "{{ foreman_admin_user }}"
         password: "{{ foreman_admin_pass }}"
       when: foreman_ldap_domain is defined
+      tags:
+        - auth
+
+    - name: create admin group
+      foreman_usergroup:
+        name: "{{ foreman_ldap_admin_group }}"
+        admin: yes
+        state: present
+        server_url: "{{ foreman_url }}"
+        username: "{{ foreman_admin_user }}"
+        password: "{{ foreman_admin_pass }}"
+      when:
+        - foreman_ldap_admin_group is defined
+      tags:
+        - auth
+
+    - name: create admin external group
+      foreman_external_usergroup:
+        name: "{{ foreman_ldap_admin_group }}"
+        auth_source_ldap: "{{ foreman_ldap_domain }}"
+        usergroup: "{{ foreman_ldap_admin_group }}"
+        state: present
+        server_url: "{{ foreman_url }}"
+        username: "{{ foreman_admin_user }}"
+        password: "{{ foreman_admin_pass }}"
+      when:
+        - foreman_ldap_domain is defined
+        - foreman_ldap_admin_group is defined
+      tags:
+        - auth
+
+    - name: create admin group
+      foreman_usergroup:
+        name: "{{ foreman_ldap_users_group }}"
+        roles:
+          - Viewer
+        state: present
+        server_url: "{{ foreman_url }}"
+        username: "{{ foreman_admin_user }}"
+        password: "{{ foreman_admin_pass }}"
+      when:
+        - foreman_ldap_users_group is defined
+      tags:
+        - auth
+
+    - name: create users group
+      foreman_external_usergroup:
+        name: "{{ foreman_ldap_users_group }}"
+        auth_source_ldap: "{{ foreman_ldap_domain }}"
+        usergroup: "{{ foreman_ldap_users_group }}"
+        state: present
+        server_url: "{{ foreman_url }}"
+        username: "{{ foreman_admin_user }}"
+        password: "{{ foreman_admin_pass }}"
+      when:
+        - foreman_ldap_domain is defined
+        - foreman_ldap_users_group is defined
+      tags:
+        - auth
