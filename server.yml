@@ -86,7 +86,7 @@
     - name: configure ldap authentication
       foreman_auth_source_ldap:
         name: "{{ foreman_ldap_domain }}"
-        name: "{{ foreman_ldap_type | default('active_directory') }}"
+        server_type: "{{ foreman_ldap_type | default('active_directory') }}"
         host: "{{ foreman_ldap_host }}"
         locations: "{{ foreman_locations }}"
         organizations: "{{ foreman_organizations }}"
