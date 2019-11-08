@@ -112,6 +112,8 @@
       foreman_usergroup:
         name: "{{ foreman_ldap_admin_group }}"
         admin: yes
+        roles:
+          - System admin
         state: present
         server_url: "{{ foreman_url }}"
         username: "{{ foreman_admin_user }}"
