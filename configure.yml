@@ -13,34 +13,6 @@
   vars:
 
     foreman_admin_user: admin
-    foreman_os:
-      - name: Ubuntu
-        family: Debian
-        architecture: x86_64
-        major: 18.04
-        release_name: bionic
-        ptables:
-          - "Preseed default"
-        provisioning_templates:
-          - "Preseed default"
-          - "Preseed default finish"
-          - "Preseed default PXELinux"
-        media:
-          - Ubuntu mirror
-        password_hash: SHA512
-      - name: CentOS
-        family: Redhat
-        architecture: x86_64
-        major: 7
-        ptables:
-          - "Kickstart default"
-        provisioning_templates:
-          - "Kickstart default"
-          - "Kickstart default finish"
-          - "Kickstart default PXELinux"
-        media:
-          - CentOS mirror
-        password_hash: SHA512
 
   tasks:
 
@@ -62,13 +34,13 @@
             password: "{{ foreman_admin_pass }}"
           loop_control:
             label: "{{ item.name }}"
-          loop: "{{ foreman_os }}"
+          loop: "{{ foreman_os | default([]) }}"
 
         - name: enumerate foreman media
           set_fact:
             foreman_media: "{{ foreman_os | selectattr('media', 'defined') | map(attribute='media') | flatten(levels=1) | unique | list }}"
 
-        - name: update foreman installation media
+        - name: manage foreman installation media
           foreman_installation_medium:
             name: "{{ item }}"
             locations: "{{ foreman_locations }}"
@@ -77,6 +49,26 @@
             server_url: "{{ foreman_url }}"
             username: "{{ foreman_admin_user }}"
             password: "{{ foreman_admin_pass }}"
-          loop: "{{ foreman_media }}"
+          loop: "{{ foreman_media | default([]) }}"
+
+        - name: manage foreman hostgroups
+          foreman_hostgroup:
+            name: "{{ item.name }}"
+            organizations: "{{ item.organizations | default(omit) }}"
+            locations: "{{ item.locations | default(omit) }}"
+            domain: "{{ item.domain | default(omit) }}"
+            subnet: "{{ item.subnet | default(omit) }}"
+            architecture: "{{ item.architecture | default(omit) }}"
+            media: "{{ item.media | default(omit) }}"
+            operatingsystem: "{{ item.operatingsystem | default(omit) }}"
+            pxe_loader: "{{ item.pxe_loader | default(omit) }}"
+            ptable: "{{ item.ptable | default(omit) }}"
+            root_pass: "{{ item.root_pass | default(omit) }}"
+            server_url: "{{ foreman_url }}"
+            username: "{{ foreman_admin_user }}"
+            password: "{{ foreman_admin_pass }}"
+          loop_control:
+            label: "{{ item.name }}"
+          loop: "{{ foreman_hostgroups | default([]) }}"
 
       delegate_to: localhost
