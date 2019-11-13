@@ -18,6 +18,7 @@
 
     puppet_version: 6
 
+    foreman_admin_user: admin
     foreman_proxy_port: 8443
     _foreman_domains:
       - "{{ ansible_domain }}"

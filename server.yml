@@ -17,6 +17,7 @@
   vars:
 
     foreman_api_allpages: 9999999999
+    foreman_admin_user: admin
 
   tasks:
 
