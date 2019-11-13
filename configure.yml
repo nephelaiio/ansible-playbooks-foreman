@@ -12,120 +12,39 @@
 
   vars:
 
-    foreman_api_allpages: 9999999999
+    foreman_admin_user: admin
+    foreman_os:
+      - name: Ubuntu
+        family: Debian
+        architecture: x86_64
+        major: 18.04
+        release_name: bionic
+        ptables:
+          - "Preseed default"
+        provisioning_templates:
+          - "Preseed default"
+          - "Preseed default finish"
+          - "Preseed default PXELinux"
+        media:
+          - Ubuntu mirror
+        password_hash: SHA512
+      - name: CentOS
+        family: Redhat
+        architecture: x86_64
+        major: 7
+        ptables:
+          - "Kickstart default"
+        provisioning_templates:
+          - "Kickstart default"
+          - "Kickstart default finish"
+          - "Kickstart default PXELinux"
+        media:
+          - CentOS mirror
+        password_hash: SHA512
 
   tasks:
 
-    - name: install pip requirements
-      pip:
-        name: apypie
-
-    - name: query foreman users
-      uri:
-        url: "{{ foreman_url }}/api/users"
-        method: GET
-        body_format: json
-        body:
-          per_page: "{{ foreman_api_allpages }}"
-        force_basic_auth: yes
-        user: "{{ foreman_admin_user }}"
-        password: "{{ foreman_admin_pass }}"
-      register: foreman_user_query
-      ignore_errors: yes
-
     - block:
-
-        - name: rake permissions:reset
-          command: /usr/sbin/foreman-rake permissions:reset
-          register: handler_permissions_reset
-          when: foreman_user_query is failed
-
-        - name: override admin credentials
-          set_fact:
-            foreman_permissions_reset: true
-            reset_admin_user: "{{ ((handler_permissions_reset.stdout | split_with(' '))[3])[0:-1] }}"
-            reset_admin_pass: "{{ (handler_permissions_reset.stdout | split_with(' '))[5] }}"
-
-        - name: query foreman users
-          uri:
-            url: "{{ foreman_url }}/api/users"
-            method: GET
-            body_format: json
-            body:
-              per_page: "{{ foreman_api_allpages }}"
-            force_basic_auth: yes
-            user: "{{ reset_admin_user }}"
-            password: "{{ reset_admin_pass }}"
-          register: foreman_reset_query
-
-        - name: set admin user facts
-          set_fact:
-            foreman_admin: "{{ foreman_reset_query.json.results | selectattr('login', 'equalto', foreman_admin_user) |  first }}"
-
-        - name: set foreman admin password
-          uri:
-            url: "{{ foreman_url }}/api/users/{{ foreman_admin.id }}"
-            method: PUT
-            body_format: json
-            body:
-              user:
-                current_password: "{{ reset_admin_pass }}"
-                password: "{{ foreman_admin_pass }}"
-                password_confirmation: "{{ foreman_admin_pass }}"
-            force_basic_auth: yes
-            user: "{{ reset_admin_user }}"
-            password: "{{ reset_admin_pass }}"
-          when: foreman_user_query is failed
-
-      when: foreman_user_query is failed
-
-    - block:
-
-        - name: destroy default foreman organization
-          foreman_organization:
-            name: 'Default Organization'
-            state: absent
-            server_url: "{{ foreman_url }}"
-            username: "{{ foreman_admin_user }}"
-            password: "{{ foreman_admin_pass }}"
-
-        - name: create foreman organizations
-          foreman_organization:
-            name: "{{ item }}"
-            server_url: "{{ foreman_url }}"
-            username: "{{ foreman_admin_user }}"
-            password: "{{ foreman_admin_pass }}"
-          loop: "{{ foreman_organizations }}"
-
-        - name: destroy default foreman locations
-          foreman_location:
-            name: 'Default Location'
-            state: absent
-            server_url: "{{ foreman_url }}"
-            username: "{{ foreman_admin_user }}"
-            password: "{{ foreman_admin_pass }}"
-
-        - name: create foreman locations
-          foreman_location:
-            name: "{{ item.name }}"
-            organizations: "{{ item.organizations }}"
-            server_url: "{{ foreman_url }}"
-            username: "{{ foreman_admin_user }}"
-            password: "{{ foreman_admin_pass }}"
-          loop_control:
-            label: "{{ item.name }}"
-          loop: "{{ foreman_locations }}"
-
-        - name: create foreman media
-          foreman_installation_medium:
-            name: "{{ item.name }}"
-            locations: "{{ item.locations }}"
-            server_url: "{{ foreman_url }}"
-            username: "{{ foreman_admin_user }}"
-            password: "{{ foreman_admin_pass }}"
-          loop_control:
-            label: "{{ item.name }}"
-          loop: "{{ foreman_media }}"
 
         - name: create foreman operating systems
           foreman_operatingsystem:
@@ -136,6 +55,7 @@
             release_name: "{{ item.release_name | default(omit) }}"
             architectures: "{{ item.architectures | default(omit) }}"
             media: "{{ item.media | default(omit) }}"
+            ptables: "{{ item.ptables | default(omit) }}"
             password_hash: "{{ item.password_hash | default('SHA512') }}"
             server_url: "{{ foreman_url }}"
             username: "{{ foreman_admin_user }}"
@@ -143,5 +63,20 @@
           loop_control:
             label: "{{ item.name }}"
           loop: "{{ foreman_os }}"
+
+        - name: enumerate foreman media
+          set_fact:
+            foreman_media: "{{ foreman_os | selectattr('media', 'defined') | map(attribute='media') | flatten(levels=1) | unique | list }}"
+
+        - name: update foreman installation media
+          foreman_installation_medium:
+            name: "{{ item }}"
+            locations: "{{ foreman_locations }}"
+            organizations: "{{ foreman_organizations }}"
+            operatingsystems: "{{ foreman_os | selectattr('media', 'contains', item) | map(attribute='name') | unique | list }}"
+            server_url: "{{ foreman_url }}"
+            username: "{{ foreman_admin_user }}"
+            password: "{{ foreman_admin_pass }}"
+          loop: "{{ foreman_media }}"
 
       delegate_to: localhost
