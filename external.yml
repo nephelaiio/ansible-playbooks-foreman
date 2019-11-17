@@ -14,3 +14,10 @@
 
     puppet_version: 6
     puppet_agent_server: "{{ groups['foreman_app'] | first }}"
+
+  tasks:
+
+    - name: restart puppet agent
+      service:
+        name: puppet
+        state: restarted
