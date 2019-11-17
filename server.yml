@@ -20,6 +20,7 @@
     foreman_api_allpages: 9999999999
     foreman_installer_options:
       - "--enable-foreman"
+      - "--enable-puppet"
       - "--enable-foreman-cli"
       - "--enable-foreman-cli-ansible"
       - "--enable-foreman-compute-libvirt"
