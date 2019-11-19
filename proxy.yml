@@ -46,6 +46,7 @@
       - "--foreman-proxy-dhcp-range '{{ foreman_subnet | ipaddr(foreman_dhcp_from) | ipaddr('address') }} {{  foreman_subnet | ipaddr(foreman_dhcp_to) | ipaddr('address') }}'"
       - "--foreman-proxy-dns true"
       - "--foreman-proxy-dns-provider powerdns"
+      - "--foreman-proxy-plugin-dns-powerdns-backend rest"
       - "--foreman-proxy-plugin-dns-powerdns-rest-api-key {{ foreman_pdns_api_key }}"
       - "--foreman-proxy-plugin-dns-powerdns-rest-url {{ foreman_pdns_url }}/api/v1/servers/localhost"
       - "--foreman-proxy-plugin-discovery-install-images true"
