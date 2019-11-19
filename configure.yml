@@ -63,6 +63,7 @@
             operatingsystem: "{{ item.operatingsystem | default(omit) }}"
             pxe_loader: "{{ item.pxe_loader | default(omit) }}"
             ptable: "{{ item.ptable | default(omit) }}"
+            environment: "{{ item.environment | default(omit) }}"
             puppet_proxy: "{{ item.puppet_proxy | default(omit) }}"
             puppet_ca_proxy: "{{ item.puppet_ca_proxy | default(omit) }}"
             openscap_proxy: "{{ item.openscap_proxy | default(omit) }}"
