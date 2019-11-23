@@ -12,11 +12,63 @@
 
   vars:
 
-    foreman_admin_user: admin
+    foreman_api_allpages: 9999999999
 
   tasks:
 
     - block:
+
+        - name: query template kinds
+          uri:
+            url: "{{ foreman_url }}/api/template_kinds"
+            method: GET
+            body_format: json
+            body:
+              per_page: "{{ foreman_api_allpages }}"
+            user: "{{ foreman_api_user }}"
+            password: "{{ foreman_api_pass }}"
+            force_basic_auth: yes
+            status_code: 200
+          register: foreman_template_kind_query
+          tags:
+            - always
+
+        - name: set template kind facts
+          set_fact:
+            foreman_template_kind_results: "{{ foreman_template_kind_query.json.results }}"
+          tags:
+            - always
+
+        - name: query provisioning template list
+          uri:
+            url: "{{ foreman_url }}/api/provisioning_templates"
+            method: GET
+            body_format: json
+            body:
+              per_page: "{{ foreman_api_allpages }}"
+            user: "{{ foreman_api_user }}"
+            password: "{{ foreman_api_pass }}"
+            force_basic_auth: yes
+            status_code: 200
+          register: foreman_ptemplate_list
+          tags:
+            - always
+
+        - name: query provisioning templates
+          uri:
+            url: "{{ foreman_url }}/api/provisioning_templates/{{ item.id }}"
+            method: GET
+            body_format: json
+            user: "{{ foreman_api_user }}"
+            password: "{{ foreman_api_pass }}"
+            force_basic_auth: yes
+            status_code: 200
+          loop_control:
+            label: "{{ item.name }}"
+          loop: "{{ foreman_ptemplate_list.json.results }}"
+          register: foreman_ptemplate_results
+          tags:
+            - always
 
         - name: create foreman operating systems
           foreman_operatingsystem:
@@ -25,6 +77,7 @@
             major: "{{ item.major }}"
             minor: "{{ item.minor | default(omit) }}"
             release_name: "{{ item.release_name | default(omit) }}"
+            provisioning_templates: "{{ item.provisioning_templates | default(omit) }}"
             architectures: "{{ item.architectures | default(omit) }}"
             media: "{{ item.media | default(omit) }}"
             ptables: "{{ item.ptables | default(omit) }}"
@@ -35,21 +88,58 @@
           loop_control:
             label: "{{ item.name }}"
           loop: "{{ foreman_os | default([]) }}"
+          ignore_errors: yes
+          tags:
+            - os
 
         - name: enumerate foreman media
           set_fact:
             foreman_media: "{{ foreman_os | selectattr('media', 'defined') | map(attribute='media') | flatten(levels=1) | unique | list }}"
+          tags:
+            - always
 
         - name: manage foreman installation media
           foreman_installation_medium:
             name: "{{ item }}"
             locations: "{{ foreman_locations }}"
             organizations: "{{ foreman_organizations }}"
-            operatingsystems: "{{ foreman_os | selectattr('media', 'contains', item) | map(attribute='name') | unique | list }}"
+            operatingsystems: "{{ media_os_names}}"
             server_url: "{{ foreman_url }}"
             username: "{{ foreman_admin_user }}"
             password: "{{ foreman_admin_pass }}"
+          vars:
+            foreman_os_dict: "{{ foreman_os | list_to_dict(key_attr='name', remove_key=False) }}"
+            media_os: "{{ foreman_os | selectattr('media', 'contains', item) | map(attribute='name') | unique | list }}"
+            media_os_names: "{{ media_os | map('extract', foreman_os_dict) | map('map_attributes', ['name', 'major']) | map('join', ' ') | list }}"
           loop: "{{ foreman_media | default([]) }}"
+          tags:
+            - media
+
+        - name: register provisioning template data
+          set_fact:
+            foreman_provisioning_template_details: "{{ foreman_ptemplate_results.results | map(attribute='json') | list | list_to_dict(key_attr='name') }}"
+          tags:
+            - always
+
+        - name: enumerate foreman provisioning templates
+          set_fact:
+            foreman_provisioning_templates: "{{ foreman_os | selectattr('provisioning_templates', 'defined') | map(attribute='provisioning_templates') | flatten(levels=1) | unique | list }}"
+          tags:
+            - always
+
+        - name: manage foreman environments
+          foreman_environment:
+            name: "{{ item.name }}"
+            organizations: "{{ item.organizations | default(omit) }}"
+            locations: "{{ item.locations | default(omit) }}"
+            server_url: "{{ foreman_url }}"
+            username: "{{ foreman_admin_user }}"
+            password: "{{ foreman_admin_pass }}"
+          loop_control:
+            label: "{{ item.name }}"
+          loop: "{{ foreman_environments | default([]) }}"
+          tags:
+            - environments
 
         - name: manage foreman hostgroups
           foreman_hostgroup:
@@ -75,5 +165,7 @@
           loop_control:
             label: "{{ item.name }}"
           loop: "{{ foreman_hostgroups | default([]) }}"
+          tags:
+            - hostgroups
 
       delegate_to: localhost

@@ -33,7 +33,7 @@
       - "--enable-foreman-proxy-plugin-dns-powerdns"
       - "--foreman-proxy-bind-host 0.0.0.0"
       - "--foreman-proxy-trusted-hosts localhost"
-      - "--foreman-proxy-puppet false"
+      - "--foreman-proxy-puppet true"
       - "--foreman-proxy-foreman-base-url {{ foreman_url }}"
       - "--foreman-proxy-register-in-foreman true"
       - "--foreman-proxy-bmc true"
@@ -52,7 +52,7 @@
       - "--foreman-proxy-plugin-discovery-install-images true"
       - "--foreman-proxy-http true"
       - "--foreman-proxy-logs true"
-      - "--foreman-proxy-puppet false"
+      - "--foreman-proxy-puppet true"
       - "--foreman-proxy-tftp true"
       - "--foreman-proxy-oauth-consumer-key {{ foreman_oauth_consumer_key }}"
       - "--foreman-proxy-oauth-consumer-secret {{ foreman_oauth_consumer_secret }}"
@@ -64,6 +64,7 @@
     - name: create puppet group
       group:
         name: puppet
+        local: yes
 
   tasks:
 

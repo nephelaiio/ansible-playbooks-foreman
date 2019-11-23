@@ -17,6 +17,7 @@
 
   vars:
 
+    foreman_installer_scenario: foreman
     foreman_api_allpages: 9999999999
     foreman_installer_options:
       - "--enable-foreman"
@@ -27,7 +28,6 @@
       - "--enable-foreman-compute-ovirt"
       - "--enable-foreman-plugin-templates"
       - "--enable-foreman-plugin-openscap"
-      - "--enable-foreman-plugin-cockpit"
       - "--enable-foreman-plugin-discovery"
       - "--foreman-foreman-url {{ foreman_url }}"
       - "--foreman-configure-epel-repo true"
@@ -43,25 +43,13 @@
       - "--foreman-initial-admin-password {{ foreman_admin_pass }}"
       - "--puppet-autosign true"
       - "--puppet-autosign-entries '*.{{ foreman_puppet_autosign_domain }}'"
-      - "--enable-foreman-proxy"
-      - "--foreman-proxy-bmc false"
-      - "--foreman-proxy-dhcp false"
-      - "--foreman-proxy-dns false"
-      - "--foreman-proxy-http false"
-      - "--foreman-proxy-logs false"
-      - "--foreman-proxy-puppet true"
-      - "--foreman-proxy-tftp false"
+      - "--no-enable-foreman-proxy"
       - "--foreman-oauth-active true"
       - "--foreman-oauth-consumer-key {{ foreman_oauth_consumer_key }}"
       - "--foreman-oauth-consumer-secret {{ foreman_oauth_consumer_secret }}"
-      - "--foreman-proxy-oauth-consumer-key {{ foreman_oauth_consumer_key }}"
-      - "--foreman-proxy-oauth-consumer-secret {{ foreman_oauth_consumer_secret }}"
       - "--foreman-server-ssl-ca {{ foreman_server_ssl_ca }}"
       - "--foreman-server-ssl-cert {{ foreman_server_ssl_cert }}"
       - "--foreman-server-ssl-key {{ foreman_server_ssl_key }}"
-      - "--foreman-proxy-ssl-ca {{ foreman_proxy_ssl_ca }}"
-      - "--foreman-proxy-ssl-cert {{ foreman_proxy_ssl_cert }}"
-      - "--foreman-proxy-ssl-key {{ foreman_proxy_ssl_key }}"
 
   tasks:
 
@@ -153,7 +141,7 @@
       tags:
         - auth
 
-    - name: create admin group
+    - name: create local admin group
       foreman_usergroup:
         name: "{{ foreman_ldap_admin_group }}"
         admin: yes
@@ -168,7 +156,7 @@
       tags:
         - auth
 
-    - name: create admin external group
+    - name: create ldap admin group
       foreman_external_usergroup:
         name: "{{ foreman_ldap_admin_group }}"
         auth_source_ldap: "{{ foreman_ldap_domain }}"
@@ -183,7 +171,7 @@
       tags:
         - auth
 
-    - name: create admin group
+    - name: create ldap users group
       foreman_usergroup:
         name: "{{ foreman_ldap_users_group }}"
         roles:
@@ -197,7 +185,7 @@
       tags:
         - auth
 
-    - name: create users group
+    - name: create local users group
       foreman_external_usergroup:
         name: "{{ foreman_ldap_users_group }}"
         auth_source_ldap: "{{ foreman_ldap_domain }}"
