@@ -204,3 +204,20 @@
         - foreman_ldap_users_group is defined
       tags:
         - auth
+
+    - block:
+
+        - name: install puppet openscap module
+          command: /opt/puppetlabs/bin/puppet module install theforeman-foreman_scap_client
+          changed_when: false
+
+        - name: upgrade puppet openscap module
+          command: /opt/puppetlabs/bin/puppet module upgrade theforeman-foreman_scap_client
+          changed_when: false
+
+        - name: upload default scap content
+          command: /sbin/foreman-rake foreman_openscap:bulk_upload:default
+          changed_when: false
+
+      tags:
+        - scap
