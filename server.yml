@@ -205,6 +205,14 @@
       tags:
         - auth
 
+    - name: install puppet agent module
+      command: /opt/puppetlabs/bin/puppet module install puppetlabs-puppet_agent
+      changed_when: false
+
+    - name: upgrade puppet agent module
+      command: /opt/puppetlabs/bin/puppet module upgrade puppetlabs-puppet_agent
+      changed_when: false
+
     - block:
 
         - name: install puppet openscap module
