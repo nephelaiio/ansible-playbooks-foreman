@@ -229,3 +229,20 @@
 
       tags:
         - scap
+      when: foreman_openscap_manage | default('no') | bool
+
+    - name: touch autosign file
+      file:
+        state: touch
+        path: /etc/puppetlabs/puppet/autosign.conf
+        owner: puppet
+        group: puppet
+        mode: 0664
+
+    - name: ignore puppet os facts
+      foreman_setting:
+        name:  ignore_facts_for_operatingsystem
+        value: True
+        server_url: "{{ foreman_url }}"
+        username: "{{ foreman_admin_user }}"
+        password: "{{ foreman_admin_pass }}"
