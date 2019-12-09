@@ -70,7 +70,9 @@
 
     - name: install pip requirements
       pip:
-        name: apypie
+        name:
+          - apypie
+          - urllib3
 
     - name: create foreman domains
       foreman_domain:
