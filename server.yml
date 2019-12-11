@@ -241,7 +241,7 @@
 
     - name: ignore puppet os facts
       foreman_setting:
-        name:  ignore_facts_for_operatingsystem
+        name: ignore_facts_for_operatingsystem
         value: True
         server_url: "{{ foreman_url }}"
         username: "{{ foreman_admin_user }}"
