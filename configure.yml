@@ -39,6 +39,20 @@
           tags:
             - always
 
+        - name: create partitioning templates
+          foreman_ptable:
+            name: "{{ item.name }}"
+            layout: "{{ item.layout }}"
+            os_family: "{{ item.os_family }}"
+            server_url: "{{ foreman_url }}"
+            username: "{{ foreman_admin_user }}"
+            password: "{{ foreman_admin_pass }}"
+          loop_control:
+            label: "{{ item.name }}"
+          loop: "{{ foreman_ptables | default([]) }}"
+          tags:
+            - ptables
+
         - name: query provisioning template list
           uri:
             url: "{{ foreman_url }}/api/provisioning_templates"
