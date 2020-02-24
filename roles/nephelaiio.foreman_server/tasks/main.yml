@@ -1,0 +1,87 @@
+---
+- name: install pip requirements
+  pip:
+    name: apypie
+
+- name: query foreman users
+  uri:
+    url: "{{ foreman_url }}/api/users"
+    method: GET
+    body_format: json
+    body:
+      per_page: "{{ foreman_api_allpages }}"
+    force_basic_auth: yes
+    user: "{{ foreman_admin_user }}"
+    password: "{{ foreman_admin_pass }}"
+  register: foreman_user_query
+  ignore_errors: yes
+
+- block:
+
+    - name: rake permissions:reset
+      command: /usr/sbin/foreman-rake permissions:reset
+      register: handler_permissions_reset
+
+    - name: override admin credentials
+      set_fact:
+        foreman_permissions_reset: true
+        reset_admin_user: "{{ ((handler_permissions_reset.stdout | split_with(' '))[3])[0:-1] }}"
+        reset_admin_pass: "{{ (handler_permissions_reset.stdout | split_with(' '))[5] }}"
+
+    - name: query foreman users
+      uri:
+        url: "{{ foreman_url }}/api/users"
+        method: GET
+        body_format: json
+        body:
+          per_page: "{{ foreman_api_allpages }}"
+        force_basic_auth: yes
+        user: "{{ reset_admin_user }}"
+        password: "{{ reset_admin_pass }}"
+      register: foreman_reset_query
+
+    - name: set admin user facts
+      set_fact:
+        foreman_admin: "{{ foreman_reset_query.json.results | selectattr('login', 'equalto', foreman_admin_user) |  first }}"
+        foreman_reset:
+          password: "{{ foreman_admin_pass }}"
+
+    - name: set admin foreman password
+      uri:
+        url: "{{ foreman_url }}/api/users/{{ foreman_admin.id }}"
+        method: PUT
+        body_format: json
+        body:
+          user:
+            current_password: "{{ reset_admin_pass }}"
+            password: "{{ foreman_admin_pass }}"
+            password_confirmation: "{{ foreman_admin_pass }}"
+        force_basic_auth: yes
+        user: "{{ reset_admin_user }}"
+        password: "{{ reset_admin_pass }}"
+
+  when: foreman_user_query is failed
+
+- name: install puppet agent module
+  command: /opt/puppetlabs/bin/puppet module install puppetlabs-puppet_agent
+  changed_when: false
+
+- name: upgrade puppet agent module
+  command: /opt/puppetlabs/bin/puppet module upgrade puppetlabs-puppet_agent
+  changed_when: false
+
+- name: touch autosign file
+  file:
+    state: touch
+    path: /etc/puppetlabs/puppet/autosign.conf
+    owner: puppet
+    group: puppet
+    mode: 0664
+
+- name: ignore puppet os facts
+  foreman_setting:
+    name: ignore_facts_for_operatingsystem
+    value: True
+    server_url: "{{ foreman_url }}"
+    username: "{{ foreman_admin_user }}"
+    password: "{{ foreman_admin_pass }}"

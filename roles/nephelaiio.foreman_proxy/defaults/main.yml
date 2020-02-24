@@ -1,0 +1,4 @@
+---
+foreman_proxy_ssl_ca: /etc/puppetlabs/puppet/ssl/certs/ca.pem
+foreman_proxy_ssl_cert: "/etc/puppetlabs/puppet/ssl/certs/{{ inventory_hostname }}.pem"
+foreman_proxy_ssl_key: "/etc/puppetlabs/puppet/ssl/private_keys/{{ inventory_hostname }}.pem"
