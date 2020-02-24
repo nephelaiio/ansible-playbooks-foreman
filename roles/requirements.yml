@@ -2,6 +2,6 @@
 - src: nephelaiio.plugins
   version: 1.0.21
 - src: nephelaiio.pip
-  version: 4.0.1
+  version: 4.0.4
 - src: diodonfrost.puppet_agent
-  version: 1.4.0
+  version: 1.5.0
