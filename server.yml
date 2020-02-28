@@ -1,17 +1,10 @@
 ---
 - name: Install foreman server
 
-  hosts: foreman_app
+  hosts: foreman_server
 
   become: yes
 
   roles:
 
-    - nephelaiio.plugins
-    - nephelaiio.pip
-    - umask
-    - koji
-    - foreman_server_repositories
-    - haveged
-    - foreman_installer
     - nephelaiio.foreman_server

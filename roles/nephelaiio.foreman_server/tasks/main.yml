@@ -1,18 +1,41 @@
 ---
+- name: configure hosts file
+  lineinfile:
+    path: /etc/hosts
+    backup: yes
+    firstmatch: yes
+    line: '127.0.0.1 {{ inventory_hostname }} localhost localhost.localdomain localhost4 localhost4.localdomain4'
+    regexp: "^127.0.0.1"
+
+- name: include role dependencies
+  include_role:
+    name: "{{ item }}"
+  vars:
+    foreman_required_roles:
+      - nephelaiio.plugins
+      - nephelaiio.pip
+      - nephelaiio.foreman_repo
+      - diodonfrost.puppet_agent
+      - foreman_installer
+  loop: "{{ (foreman_required_roles | default []) + foreman_extra_roles }}"
+
 - name: install pip requirements
   pip:
     name: apypie
 
 - name: query foreman users
   uri:
-    url: "{{ foreman_url }}/api/users"
+    url: "{{ foreman_url | urlsplit('scheme') }}://{{ ansible_fqdn }}/api/users"
     method: GET
     body_format: json
     body:
       per_page: "{{ foreman_api_allpages }}"
+    headers:
+      Host: "{{ foreman_url | urlsplit('hostname') }}"
     force_basic_auth: yes
     user: "{{ foreman_admin_user }}"
     password: "{{ foreman_admin_pass }}"
+    validate_certs: no
   register: foreman_user_query
   ignore_errors: yes
 
@@ -30,14 +53,17 @@
 
     - name: query foreman users
       uri:
-        url: "{{ foreman_url }}/api/users"
+        url: "{{ foreman_url | urlsplit('scheme') }}://{{ ansible_fqdn }}/api/users"
         method: GET
         body_format: json
         body:
           per_page: "{{ foreman_api_allpages }}"
+        headers:
+          Host: "{{ foreman_url | urlsplit('hostname') }}"
         force_basic_auth: yes
         user: "{{ reset_admin_user }}"
         password: "{{ reset_admin_pass }}"
+        validate_certs: no
       register: foreman_reset_query
 
     - name: set admin user facts
@@ -48,9 +74,11 @@
 
     - name: set admin foreman password
       uri:
-        url: "{{ foreman_url }}/api/users/{{ foreman_admin.id }}"
+        url: "{{ foreman_url | urlsplit('scheme') }}://{{ ansible_fqdn }}/api/users/{{ foreman_admin.id }}"
         method: PUT
         body_format: json
+        headers:
+          Host: "{{ foreman_url | urlsplit('hostname') }}"
         body:
           user:
             current_password: "{{ reset_admin_pass }}"
@@ -59,6 +87,7 @@
         force_basic_auth: yes
         user: "{{ reset_admin_user }}"
         password: "{{ reset_admin_pass }}"
+        validate_certs: no
 
   when: foreman_user_query is failed
 

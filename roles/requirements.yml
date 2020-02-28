@@ -3,5 +3,7 @@
   version: 1.0.21
 - src: nephelaiio.pip
   version: 4.0.4
+- src: nephelaiio.foreman_repo
+  version: 0.0.1
 - src: diodonfrost.puppet_agent
   version: 1.5.0

@@ -1,6 +1,16 @@
 ---
+foreman_release: 1.24
+foreman_repositories_version: "{{ foreman_release }}"
+foreman_url: "{{ ansible_fqdn }}"
 foreman_installer_scenario: foreman
-foreman_api_allpages: 9999999999
+foreman_admin_user: admin
+foreman_installer_admin_user: "{{ foreman_admin_user }}"
+foreman_installer_admin_password: "{{ foreman_admin_pass }}"
+foreman_api_user: "{{ foreman_admin_user }}"
+foreman_api_pass: "{{ foreman_admin_pass }}"
+foreman_server_ssl_ca: /etc/puppetlabs/puppet/ssl/certs/ca.pem
+foreman_server_ssl_cert: "/etc/puppetlabs/puppet/ssl/certs/{{ inventory_hostname }}.pem"
+foreman_server_ssl_key: "/etc/puppetlabs/puppet/ssl/private_keys/{{ inventory_hostname }}.pem"
 foreman_installer_options:
   - "--enable-foreman"
   - "--enable-puppet"
@@ -15,29 +25,15 @@ foreman_installer_options:
   - "--foreman-configure-epel-repo true"
   - "--foreman-configure-scl-repo true"
   - "--foreman-db-adapter postgresql"
-  - "--foreman-db-database {{ foreman_db_name }}"
+  - "--foreman-db-username {{ foreman_db_user | default('foreman') }}"
+  - "--foreman-db-password {{ foreman_db_pass }}"
+  - "--foreman-db-database {{ foreman_db_name | default('foreman') }}"
   - "--foreman-db-host localhost"
   - "--foreman-db-manage true"
   - "--foreman-db-manage-rake true"
-  - "--foreman-db-username {{ foreman_db_user }}"
-  - "--foreman-db-password {{ foreman_db_pass }}"
   - "--foreman-initial-admin-username {{ foreman_admin_user }}"
   - "--foreman-initial-admin-password {{ foreman_admin_pass }}"
-  - "--puppet-autosign true"
-  - "--puppet-autosign-entries '*.{{ foreman_puppet_autosign_domain }}'"
-  - "--enable-foreman-plugin-ansible"
-  - "--enable-foreman-proxy"
-  - "--enable-foreman-proxy-plugin-ansible"
-  - "--foreman-proxy-puppet true"
-  - "--foreman-oauth-active true"
-  - "--foreman-oauth-consumer-key {{ foreman_oauth_consumer_key }}"
-  - "--foreman-oauth-consumer-secret {{ foreman_oauth_consumer_secret }}"
-  - "--foreman-proxy-oauth-consumer-key {{ foreman_oauth_consumer_key }}"
-  - "--foreman-proxy-oauth-consumer-secret {{ foreman_oauth_consumer_secret }}"
-  - "--foreman-proxy-foreman-base-url {{ foreman_url }}"
   - "--foreman-server-ssl-ca {{ foreman_server_ssl_ca }}"
   - "--foreman-server-ssl-cert {{ foreman_server_ssl_cert }}"
   - "--foreman-server-ssl-key {{ foreman_server_ssl_key }}"
-foreman_server_ssl_ca: /etc/puppetlabs/puppet/ssl/certs/ca.pem
-foreman_server_ssl_cert: "/etc/puppetlabs/puppet/ssl/certs/{{ inventory_hostname }}.pem"
-foreman_server_ssl_key: "/etc/puppetlabs/puppet/ssl/private_keys/{{ inventory_hostname }}.pem"
+foreman_api_allpages: 9999999999
