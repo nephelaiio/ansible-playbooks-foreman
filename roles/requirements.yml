@@ -1,9 +1,7 @@
 ---
-- src: nephelaiio.plugins
-  version: 1.0.21
-- src: nephelaiio.pip
-  version: 4.0.4
-- src: nephelaiio.foreman_repo
+- name: repo
+  src: https://github.com/nephelaiio/ansible-role-foreman-repo.git
   version: 0.0.1
-- src: diodonfrost.puppet_agent
-  version: 1.5.0
+- name: server
+  src: https://github.com/nephelaiio/ansible-role-foreman.git
+  version: 0.0.8

@@ -7,8 +7,11 @@
 
   tasks:
 
+    - name: install role requirements
+      command: ansible-galaxy role install -r roles/requirements.yml --force
+
     - name: run ansible galaxy
-      command: ansible-galaxy install -r roles/requirements.yml -p galaxy/ --force
+      command: ansible-galaxy collection install -r roles/requirements.yml --force
 
     - name: pull git submodules
       command: git submodule update --recursive

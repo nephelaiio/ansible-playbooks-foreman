@@ -3,6 +3,9 @@
 *.swp
 *.retry
 *.lock
+*.tar
+*.tgz
+*.tar.gz
 .idea/
 .test/
 **/.molecule/

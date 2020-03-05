@@ -1,6 +1,3 @@
-[submodule "submodules/forklift"]
-	path = submodules/forklift
-	url = https://github.com/theforeman/forklift.git
-[submodule "plugins/foreman"]
-	path = plugins/foreman
-	url = https://github.com/theforeman/foreman-ansible-modules.git
+[submodule "roles/foreman_repo"]
+	path = roles/foreman_repo
+	url = https://github.com/nephelaiio/ansible-role-foreman-repo.git
